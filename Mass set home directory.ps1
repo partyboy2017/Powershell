@@ -1,5 +1,5 @@
 # Replace "fileserver" with the actual name of your file server
-$FileServer = "01-23dcfile01"
+$FileServer = "Fileserver"
 
 # Get all user objects from Active Directory
 $Users = Get-ADUser -Filter *
