@@ -1,20 +1,25 @@
-# Specify the distinguished name of the Organizational Unit
-$ouDN = "ENTER OU INFORMATION HERE"
+# Specify the Organizational Unit (OU) distinguished name
+$ouDN = "OU information here"
 
-# Get all computers within the specified OU
+# Specify the path for the output file on the desktop
+$outputFilePath = [System.IO.Path]::Combine($env:USERPROFILE, 'Desktop\BitLockerRecoveryInfo.txt')
+
+# Get all computers in the specified OU
 $computers = Get-ADComputer -Filter * -SearchBase $ouDN
 
 foreach ($computer in $computers) {
-    $computerName = $computer.Name
-    $recoveryInfo = Get-BitLockerRecovery -MountPoint "C:" -ComputerName $computerName
+    # Get the BitLocker recovery information for each computer
+    $Bitlocker_Object = Get-ADObject -Filter { objectclass -eq 'msFVE-RecoveryInformation' } -SearchBase $computer.DistinguishedName -Properties 'msFVE-RecoveryPassword'
 
-    if ($recoveryInfo -ne $null) {
-        Write-Host "BitLocker Recovery Key for $($computerName):"
-        foreach ($key in $recoveryInfo.RecoveryPassword) {
-            Write-Host $key
-        }
-        Write-Host "------------------------"
+    if ($Bitlocker_Object) {
+        $Bitlocker_Password = $Bitlocker_Object.'msFVE-RecoveryPassword'
+        $output = "BitLocker Recovery Password for $($computer.Name): $Bitlocker_Password"
     } else {
-        Write-Host "No BitLocker recovery information found for $computerName."
+        $output = "BitLocker recovery information not found for $($computer.Name)."
     }
+
+    # Append the output to the text file
+    $output | Out-File -Append -FilePath $outputFilePath
 }
+
+Write-Output "BitLocker recovery information has been saved to: $outputFilePath"
