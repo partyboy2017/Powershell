@@ -1,0 +1,20 @@
+# Specify the distinguished name of the Organizational Unit
+$ouDN = "ENTER OU INFORMATION HERE"
+
+# Get all computers within the specified OU
+$computers = Get-ADComputer -Filter * -SearchBase $ouDN
+
+foreach ($computer in $computers) {
+    $computerName = $computer.Name
+    $recoveryInfo = Get-BitLockerRecovery -MountPoint "C:" -ComputerName $computerName
+
+    if ($recoveryInfo -ne $null) {
+        Write-Host "BitLocker Recovery Key for $($computerName):"
+        foreach ($key in $recoveryInfo.RecoveryPassword) {
+            Write-Host $key
+        }
+        Write-Host "------------------------"
+    } else {
+        Write-Host "No BitLocker recovery information found for $computerName."
+    }
+}
