@@ -1,0 +1,25 @@
+#Create the group policy report in a HTML format
+Get-GPOReport -All -ReportType Html -Path "THIS PATH IS WHERE YOU WANT TO SAVE THE FILE TOO"
+
+#find the .vb and .ps1 scripts used in the gpreport.html file
+# Specify the path to the HTML file
+$htmlFilePath = "PATH TO THE FILE"
+
+# Read the HTML content
+$htmlContent = Get-Content -Path $htmlFilePath -Raw
+
+# Define the regular expression pattern for names with .ps1 extension
+$pattern = '\b\w+\.(ps1|vb)\b'
+
+# Search for matches in the HTML content
+$result = $htmlContent | Select-String -Pattern $pattern -AllMatches
+
+# Display results
+if ($result.Matches.Count -gt 0) {
+    Write-Host "Names with .ps1 or .vb extension found in $($htmlFilePath):"
+    foreach ($match in $result.Matches) {
+        Write-Host "  Matched text: $($match.Value)"
+    }
+} else {
+    Write-Host "No names with .ps1 or .vb extension found in $($htmlFilePath)."
+}
