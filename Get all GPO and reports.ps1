@@ -1,5 +1,5 @@
 # Specify the folder where you want to save the GPO reports
-$reportFolder = "C:\Users\cmorrison\Desktop\AD\"
+$reportFolder = "PATH"
 
 # Create the folder if it doesn't exist
 New-Item -ItemType Directory -Force -Path $reportFolder
