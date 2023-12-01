@@ -1,20 +1,14 @@
-$Token = (Get-ADGroup "Domain Users" -Properties PrimaryGroupToken).PrimaryGroupToken
- 
-Get-ADUser -Filter 'Enabled -eq "False"' -SearchBase "Highest level domain" -Properties PrimaryGroup,MemberOf | ForEach-Object {
- 
-#If User Primary Group is not Domain Users, then Set Domain User as Primary Group.
-If ($_.PrimaryGroup -notmatch "Domain Users"){ 
-             Set-aduser -Identity $_ -Replace @{PrimaryGroupID = $Token } -Verbose
-                                               } #If
- 
-#If User is a member of more than 1 Group. Remove All Group except Domain Users.
-If ($_.memberof) {
-            $Group = Get-ADPrincipalGroupMembership -Identity $_ | Where-Object {$_.Name -ne 'Domain Users'}
-                     Remove-ADPrincipalGroupMembership -Identity $_ -MemberOf $Group -Confirm:$false -Verbose
-                  } #If
- 
- 
-#Move User to Disabled OU.
-Move-ADObject -Identity $_ -TargetPath "Disabled users OU(if exists)" -Verbose
- 
-} #Foreach
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Get disabled users from the current location (adjust the base OU path accordingly)
+$disabledUsers = Get-ADUser -Filter {Enabled -eq $false} -SearchBase "OU or highest level domain entered here"
+
+# Specify the target OU
+$targetOU = "Enter OU here to place disabled accounts"
+
+# Move disabled users to the target OU
+foreach ($user in $disabledUsers) {
+    Move-ADObject -Identity $user.DistinguishedName -TargetPath $targetOU
+    Write-Host "Moved user $($user.SamAccountName) to $targetOU"
+}
