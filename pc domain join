@@ -1,0 +1,10 @@
+Set-ExecutionPolicy -ExecutionPolicy Undefined
+
+# Set the domain credentials
+$domain = "[DOMAIN]"
+$username = "[USERNAME]"
+$password = "[PASSWORD]" | ConvertTo-SecureString -asPlainText -Force
+$credential = New-Object System.Management.Automation.PSCredential -ArgumentList $username, $password
+
+# Join the computer to the domain
+Add-Computer -DomainName $domain -Credential $credential -Restart
