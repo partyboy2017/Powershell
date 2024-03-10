@@ -1,0 +1,36 @@
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Define the list of departments
+$departments = @("HumanResources", "Finance", "InformationTechnology", "Marketing", "Sales", 
+                 "CustomerService", "Operations", "ResearchAndDevelopment", "Legal", 
+                 "Administration", "PublicRelations", "QualityAssurance", 
+                 "SupplyChain", "ProjectManagement", "HealthAndSafety", 
+                 "TrainingAndDevelopment", "InternalAudit")
+
+# Specify the Active Directory root path
+$ouPath = "OU=Departments,DC=yourdomain,DC=com"
+
+# Loop through each department and create an OU with "Users" and "Computers" sub-OUs
+foreach ($department in $departments) {
+    $ouName = "OU=$department,$ouPath"
+    $usersOUName = "OU=Users,$ouName"
+    $computersOUName = "OU=Computers,$ouName"
+
+    # Check if the main OU already exists
+    if (-not (Get-ADOrganizationalUnit -Filter {Name -eq $department})) {
+        # Create the main OU
+        New-ADOrganizationalUnit -Name $department -Path $ouPath -Description "Department: $department"
+        Write-Host "OU '$department' created successfully."
+
+        # Create "Users" sub-OU
+        New-ADOrganizationalUnit -Name "Users" -Path $ouName -Description "Users within $department"
+        Write-Host "Sub-OU 'Users' created within '$department'."
+
+        # Create "Computers" sub-OU
+        New-ADOrganizationalUnit -Name "Computers" -Path $ouName -Description "Computers within $department"
+        Write-Host "Sub-OU 'Computers' created within '$department'."
+    } else {
+        Write-Host "OU '$department' already exists."
+    }
+}
