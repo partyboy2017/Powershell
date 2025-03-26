@@ -1,0 +1,2 @@
+Install-Module -Name ExchangeOnlineManagement
+Connect-ExchangeOnline -UserPrincipalName billybob@contoso.com
