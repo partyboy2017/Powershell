@@ -1,0 +1,18 @@
+param (
+    [string]$Subnet = "192.168.1.0",
+    [int]$Start = 1,
+    [int]$End = 254
+)
+
+Write-Host "Pinging IPs in the range $Subnet.$Start to $Subnet.$End..."
+
+for ($i = $Start; $i -le $End; $i++) {
+    $ip = "$Subnet.$i"
+    $ping = Test-Connection -ComputerName $ip -Count 1 -Quiet -ErrorAction SilentlyContinue
+
+    if ($ping) {
+        Write-Host "$ip is online" -ForegroundColor Green
+    } else {
+        Write-Host "$ip is offline" -ForegroundColor Red
+    }
+}
