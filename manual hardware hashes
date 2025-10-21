@@ -1,0 +1,28 @@
+# This script must be run as an Administrator
+
+# Set execution policy for the current process to allow script execution
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
+
+# Install the NuGet package provider, which is required to install modules from the PowerShell Gallery
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+
+# Install the PowerShell module that contains the Get-WindowsAutoPilotInfo command
+Install-Module -Name WindowsAutoPilotIntune -Force
+
+# Create a directory to store the hash file, if it doesn't already exist
+$outputDir = "C:\HardwareHash"
+if (-not (Test-Path -Path $outputDir)) {
+    New-Item -ItemType Directory -Path $outputDir
+}
+
+# Get the computer's hostname
+$hostname = $env:COMPUTERNAME
+
+# Define the full output file path using the hostname
+$outputFile = "$outputDir\$hostname.csv"
+
+# Run the command to get the device's hardware hash and save it to the new file
+Get-WindowsAutoPilotInfo -OutputFile $outputFile
+
+Write-Host "Hardware hash has been saved to $outputFile"
+Write-Host "You can now retrieve this file and upload it to Microsoft Intune."
