@@ -1,0 +1,30 @@
+# Import Active Directory module
+Import-Module ActiveDirectory
+
+# Read names from file (one name per line)
+$People = Get-Content "C:\[file path]\Names.txt"
+
+foreach ($Person in $People) {
+
+    Write-Host "Searching for: $Person" -ForegroundColor Yellow
+
+    $Users = Get-ADUser -Filter "DisplayName -eq '$Person'"
+
+    if ($Users) {
+        foreach ($User in $Users) {
+
+            Write-Host "Disabling account: $($User.SamAccountName)" -ForegroundColor Green
+
+            Disable-ADAccount -Identity $User.SamAccountName
+
+            # Optional verification
+            $Status = Get-ADUser $User.SamAccountName -Properties Enabled
+            Write-Host "Enabled Status: $($Status.Enabled)"
+        }
+    }
+    else {
+        Write-Host "No user found for '$Person'" -ForegroundColor Red
+    }
+
+    Write-Host "-----------------------------------"
+}
