@@ -1,0 +1,88 @@
+# ============================================================================
+# Change Windows Time Source to AVE-DC-003
+# Author: Christopher Morrison
+# ============================================================================
+
+$TimeServer = "[CHANGE TO SERVER NAME],0x8"
+$LogFile = "C:\Temp\NTP_Change_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+
+# Create log folder if needed
+$LogFolder = Split-Path $LogFile -Parent
+if (!(Test-Path $LogFolder)) {
+    New-Item -Path $LogFolder -ItemType Directory -Force | Out-Null
+}
+
+function Write-Log {
+    param([string]$Message)
+
+    $TimeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $Entry = "$TimeStamp - $Message"
+
+    Write-Host $Entry
+    Add-Content -Path $LogFile -Value $Entry
+}
+
+Write-Log "======================================================="
+Write-Log "Starting NTP Source Change"
+Write-Log "Target Time Server: $TimeServer"
+Write-Log "Computer: $env:COMPUTERNAME"
+Write-Log "======================================================="
+
+try {
+
+    Write-Log "Capturing current W32Time configuration..."
+
+    Write-Log "==== BEFORE CONFIGURATION ===="
+    w32tm /query /configuration | Out-File -Append $LogFile
+
+    Write-Log "==== BEFORE STATUS ===="
+    w32tm /query /status | Out-File -Append $LogFile
+
+    $CurrentSource = (w32tm /query /source)
+    Write-Log "Current Source: $CurrentSource"
+
+    Write-Log "Updating NTP source..."
+
+    w32tm /config /manualpeerlist:$TimeServer /syncfromflags:MANUAL /update | Out-File -Append $LogFile
+
+    Write-Log "Restarting Windows Time service..."
+    Restart-Service w32time -Force -ErrorAction Stop
+
+    Start-Sleep -Seconds 5
+
+    Write-Log "Forcing time synchronization..."
+    w32tm /resync /force | Out-File -Append $LogFile
+
+    Start-Sleep -Seconds 5
+
+    Write-Log "Collecting post-change information..."
+
+    $NewSource = (w32tm /query /source)
+
+    Write-Log "==== AFTER SOURCE ===="
+    Write-Log "New Source: $NewSource"
+
+    Write-Log "==== AFTER STATUS ===="
+    w32tm /query /status | Out-File -Append $LogFile
+
+    Write-Log "==== AFTER CONFIGURATION ===="
+    w32tm /query /configuration | Out-File -Append $LogFile
+
+    # Verification
+    if ($NewSource -match "AVE-DC-003") {
+        Write-Log "SUCCESS: Time source successfully changed to AVE-DC-003."
+    }
+    else {
+        Write-Log "WARNING: Verification failed."
+        Write-Log "Expected Source: AVE-DC-003"
+        Write-Log "Actual Source: $NewSource"
+    }
+
+}
+catch {
+    Write-Log "ERROR: $($_.Exception.Message)"
+    exit 1
+}
+
+Write-Log "Completed."
+Write-Log "Log File: $LogFile"
