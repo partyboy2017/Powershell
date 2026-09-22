@@ -1,0 +1,26 @@
+Import-Module ActiveDirectory
+
+# Prompt for OU
+$OU = Read-Host "Enter the Distinguished Name of the OU"
+
+# Extract OU name from DN
+$OUName = (($OU -split ',')[0] -replace '^OU=')
+
+# Remove invalid filename characters
+$OUName = $OUName -replace '[\\/:*?"<>|]', '_'
+
+# Create output file name
+$OutputFile = "C:\temp\${OUName}_ImmutableIDs.csv"
+
+# Get users and convert ObjectGUID to ImmutableID
+Get-ADUser -SearchBase $OU -Filter * -Properties ObjectGUID |
+Select-Object `
+    Name,
+    SamAccountName,
+    ObjectGUID,
+    @{Name="ImmutableID";Expression={
+        [System.Convert]::ToBase64String($_.ObjectGUID.ToByteArray())
+    }} |
+Export-Csv -Path $OutputFile -NoTypeInformation
+
+Write-Host "Export complete: $OutputFile"
