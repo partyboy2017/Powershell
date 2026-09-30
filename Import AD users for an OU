@@ -1,33 +1,30 @@
 Import-Module ActiveDirectory
 
-# Prompt for CSV file
 $CsvPath = Read-Host "Enter path to completed CSV file"
-
-if (-not (Test-Path $CsvPath)) {
-    Write-Host "File not found: $CsvPath" -ForegroundColor Red
-    exit
-}
 
 $Users = Import-Csv $CsvPath
 
 foreach ($User in $Users) {
 
     try {
-        Write-Host "Updating $($User.SamAccountName)..." -ForegroundColor Cyan
 
-        Set-ADUser `
-            -Identity $User.SamAccountName `
-            -City $User.City `
-            -State $User.State `
-            -StreetAddress $User.Address `
-            -EmailAddress $User.Email `
-            -OfficePhone $User.TelephoneNumber `
-            -PostalCode $User.ZipCode `
-            -Title $User.JobTitle
+        $Params = @{
+            Identity = $User.SamAccountName
+        }
+
+        if ($User.City)            { $Params.City = $User.City }
+        if ($User.State)           { $Params.State = $User.State }
+        if ($User.Address)         { $Params.StreetAddress = $User.Address }
+        if ($User.Email)           { $Params.EmailAddress = $User.Email }
+        if ($User.TelephoneNumber) { $Params.OfficePhone = $User.TelephoneNumber }
+        if ($User.ZipCode)         { $Params.PostalCode = $User.ZipCode }
+        if ($User.JobTitle)        { $Params.Title = $User.JobTitle }
+
+        Set-ADUser @Params
 
         Write-Host "Updated $($User.SamAccountName)" -ForegroundColor Green
     }
     catch {
-        Write-Host "Failed to update $($User.SamAccountName): $($_.Exception.Message)" -ForegroundColor Red
-    }
-}
+    Write-Host "Failed: $($User.SamAccountName)" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Yellow
+}}
