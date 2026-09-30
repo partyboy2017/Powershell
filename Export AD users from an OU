@@ -1,0 +1,51 @@
+# Import Active Directory module
+Import-Module ActiveDirectory
+
+# Prompt for OU
+$OU = Read-Host "Enter the Distinguished Name of the OU (Example: OU=Users,DC=contoso,DC=com)"
+
+# Validate OU input
+if (:IsNullOrWhiteSpace($OU)) {
+    Write-Host "No OU entered. Exiting..." -ForegroundColor Red
+    exit
+}
+
+try {
+    # Get users from OU
+    $Users = Get-ADUser -SearchBase $OU -Filter * -Properties `
+        SamAccountName,
+        City,
+        State,
+        StreetAddress,
+        EmailAddress,
+        OfficePhone,
+        PostalCode,
+        Title
+
+    if ($Users.Count -eq 0) {
+        Write-Host "No users found in the specified OU." -ForegroundColor Yellow
+        exit
+    }
+
+    # Create filename based on OU name
+    $OUName = (($OU -split ",")[0] -replace "^OU=","") -replace '[\\/:*?"<>|]', '_'
+    $OutputFile = ".\${OUName}_Users.csv"
+
+    # Export data
+    $Users | Select-Object `
+        SamAccountName,
+        City,
+        State,
+        @{Name='Address';Expression={$_.StreetAddress}},
+        @{Name='Email';Expression={$_.EmailAddress}},
+        @{Name='TelephoneNumber';Expression={$_.OfficePhone}},
+        @{Name='ZipCode';Expression={$_.PostalCode}},
+        @{Name='JobTitle';Expression={$_.Title}} |
+    Export-Csv -Path $OutputFile -NoTypeInformation
+
+    Write-Host "Export complete: $OutputFile" -ForegroundColor Green
+    Write-Host "Users exported: $($Users.Count)" -ForegroundColor Green
+}
+catch {
+    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+}
