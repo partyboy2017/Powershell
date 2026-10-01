@@ -1,0 +1,45 @@
+Import-Module ActiveDirectory
+
+$CsvPath = Read-Host "Enter path to CSV file"
+
+$UseWhatIf = Read-Host "Run in WhatIf mode? (Y/N)"
+$WhatIfMode = $UseWhatIf -match '^(Y|YES)$'
+
+$Users = Import-Csv $CsvPath
+
+foreach ($Row in $Users) {
+
+    try {
+        $User = Get-ADUser -Identity $Row.SamAccountName -Properties proxyAddresses -ErrorAction Stop
+
+        $NewPrimary = "SMTP:$($Row.SMTPAddress)"
+
+        # Convert existing primary SMTP to alias
+        $UpdatedAddresses = foreach ($Address in $User.proxyAddresses) {
+            if ($Address -cmatch '^SMTP:') {
+                $Address -replace '^SMTP:', 'smtp:'
+            }
+            else {
+                $Address
+            }
+        }
+
+        # Remove duplicate if new address already exists as an alias
+        $UpdatedAddresses = $UpdatedAddresses | Where-Object {
+            $_.ToLower() -ne ("smtp:" + $Row.SMTPAddress).ToLower()
+        }
+
+        # Add new primary SMTP
+        $UpdatedAddresses += $NewPrimary
+
+        Set-ADUser `
+            -Identity $User `
+            -Replace @{proxyAddresses = $UpdatedAddresses} `
+            -WhatIf:$WhatIfMode
+
+        Write-Host "Updated $($Row.SamAccountName) - Primary SMTP set to $($Row.SMTPAddress)" -ForegroundColor Green
+    }
+    catch {
+        Write-Warning "Failed to update $($Row.SamAccountName): $($_.Exception.Message)"
+    }
+}
